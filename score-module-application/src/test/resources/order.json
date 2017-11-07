@@ -1,0 +1,28 @@
+{
+  "uuid":"c3850c73-f4ca-4974-871c-6f99c6167f1f",
+  "customerUuid":"10359eaa-2292-4217-a7fe-45172be9b498",
+  "restaurantUuid":"836dc1c1-aec7-4272-ab1e-ba01a9842ede",
+  "addressUuid":"789224b0-5cee-48b8-89ec-13001d955391",
+  "confirmedAt": null,
+  "items":
+  [
+    {
+      "menuUuid":"dad0f8ac-9433-40fd-bd43-9ec0c12d5213",
+      "menuCategory":"PIZZA",
+      "menuUnitPrice":26,
+      "quantity":1
+    },
+    {
+      "menuUuid":"6208e2fd-45c3-4013-a69a-5f54cb249be0",
+      "menuCategory":"VEGAN",
+      "menuUnitPrice":3,
+      "quantity":3
+    },
+    {
+      "menuUuid":"bd2746ce-a975-4bf4-84dc-fedd14273a03",
+      "menuCategory":"PIZZA",
+      "menuUnitPrice":23,
+      "quantity":1
+    }
+  ]
+}
