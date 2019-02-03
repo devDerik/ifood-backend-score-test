@@ -1,6 +1,7 @@
 package ifood.score.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ public class MenuItemRelevance {
     private String id;
     private final UUID orderId;
     private final Date confirmedAt;
+    @Indexed
     private final UUID menuId;
     private final BigDecimal relevance;
     private RelevanceStatus status;

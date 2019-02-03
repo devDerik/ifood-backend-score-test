@@ -12,6 +12,10 @@ import ifood.score.repository.CategoryScoreRepository;
 import ifood.score.repository.MenuItemRelevanceRepository;
 import ifood.score.repository.MenuScoreRepository;
 import ifood.score.service.ScoreServiceImpl;
+import io.micrometer.core.instrument.*;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.stats.hist.Histogram;
+import io.micrometer.core.instrument.stats.quantile.Quantiles;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,10 +26,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.ToDoubleFunction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -57,7 +59,7 @@ public class ScoreServiceImplTest {
         this.menuItemRelevanceRepositoryMock = mock(MenuItemRelevanceRepository.class);
         this.categoryRelevanceRepositoryMock = mock(CategoryRelevanceRepository.class);
         scoreService = new ScoreServiceImpl(categoryScoreRepositoryMock, menuScoreRepositoryMock,
-                menuItemRelevanceRepositoryMock, categoryRelevanceRepositoryMock);
+                menuItemRelevanceRepositoryMock, categoryRelevanceRepositoryMock, new MeterRegistryMock());
     }
 
     @Test
@@ -235,5 +237,61 @@ public class ScoreServiceImplTest {
                 fail("Unexpected menu");
             }
         });
+    }
+
+    private static class MeterRegistryMock implements MeterRegistry {
+
+        private Clock clock;
+        private Histogram.Summation summation;
+
+        @Override
+        public Collection<Meter> getMeters() {
+            return null;
+        }
+
+        @Override
+        public Config config() {
+            return null;
+        }
+
+        @Override
+        public Search find(String s) {
+            return null;
+        }
+
+        @Override
+        public Counter counter(Meter.Id id) {
+            return mock(Counter.class);
+        }
+
+        @Override
+        public DistributionSummary summary(Meter.Id id, Histogram.Builder<?> builder, Quantiles quantiles) {
+            return null;
+        }
+
+        @Override
+        public Timer timer(Meter.Id id, Histogram.Builder<?> builder, Quantiles quantiles) {
+            return mock(Timer.class);
+        }
+
+        @Override
+        public More more() {
+            return null;
+        }
+
+        @Override
+        public Meter register(Meter.Id id, Meter.Type type, Iterable<Measurement> iterable) {
+            return null;
+        }
+
+        @Override
+        public <T> Gauge gauge(Meter.Id id, T t, ToDoubleFunction<T> toDoubleFunction) {
+            return null;
+        }
+
+        @Override
+        public Meter.Id createId(String s, Iterable<Tag> iterable, String s1, String s2) {
+            return null;
+        }
     }
 }

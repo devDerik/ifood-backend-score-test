@@ -10,7 +10,7 @@ public class ExpireScoresRunner {
         this.scoreService = scoreService;
     }
 
-    @Scheduled(cron = "0 10 0 1/1 * ?")// once at a day at 12:10 AM
+    @Scheduled(cron = "0 0 0/1 1/1 * ?")// every 1 hours
     public void run() {
         scoreService.expireScores();
     }

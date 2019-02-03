@@ -1,4 +1,4 @@
-package ifood.score.consumer;
+package ifood.score.messagebus.consumer;
 
 import ifood.score.exception.MessageConsumerException;
 

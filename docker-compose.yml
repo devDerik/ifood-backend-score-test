@@ -1,0 +1,23 @@
+version: '3.1'
+
+services:
+  scoreapp:
+    build: score-module-application
+    restart: always
+    container_name: score-app
+    ports:
+      - 8080:8080
+      - 8081:8081
+    working_dir: /opt/app
+    depends_on:
+      - mongo
+  
+  mongo:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    volumes:
+      - $HOME/data/springboot-mongo-data:/data/db
+      - $HOME/data/springboot-mongo-bkp:/data/bkp
+    restart: always

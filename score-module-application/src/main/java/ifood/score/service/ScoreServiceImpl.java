@@ -10,6 +10,9 @@ import ifood.score.repository.CategoryRelevanceRepository;
 import ifood.score.repository.CategoryScoreRepository;
 import ifood.score.repository.MenuItemRelevanceRepository;
 import ifood.score.repository.MenuScoreRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -19,6 +22,7 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ScoreServiceImpl implements ScoreService {
@@ -26,22 +30,43 @@ public class ScoreServiceImpl implements ScoreService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScoreServiceImpl.class);
     private static final int BIG_DECIMAL_SCALE = 9;
     private static final int ONE_MONTH = 1;
+    private static final TimeUnit MILLISECONDS = TimeUnit.MILLISECONDS;
+    private static final String PROCESSED_ORDER_COUNTER = "PROCESSED_ORDER_COUNTER";
+    private static final String CANCELED_ORDER_COUNTER = "CANCELED_ORDER_COUNTER";
+    private static final String EXPIRED_ORDER_COUNTER = "EXPIRED_ORDER_COUNTER";
+    private static final String GENERATED_SCORES_TIMER = "GENERATED_SCORES_TIMER";
+    private static final String CANCELED_SCORES_TIMER = "CANCELED_SCORES_TIMER";
+    private static final String EXPIRED_SCORES_TIMER = "EXPIRED_SCORES_TIMER";
     private final CategoryScoreRepository categoryScoreRepository;
     private final MenuScoreRepository menuScoreRepository;
     private final MenuItemRelevanceRepository menuItemRelevanceRepository;
     private final CategoryRelevanceRepository categoryRelevanceRepository;
+    private final Counter processedOrderCounter;
+    private final Counter expiredOrderCounter;
+    private final Counter canceledOrderCounter;
+    private final Timer generatedScoresTimer;
+    private final Timer expiredScoresTimer;
+    private final Timer canceledScoresTimer;
 
     public ScoreServiceImpl(CategoryScoreRepository categoryScoreRepository, MenuScoreRepository menuScoreRepository,
                             MenuItemRelevanceRepository menuItemRelevanceRepository,
-                            CategoryRelevanceRepository categoryRelevanceRepository) {
+                            CategoryRelevanceRepository categoryRelevanceRepository,
+                            MeterRegistry meterRegistry) {
         this.categoryScoreRepository = categoryScoreRepository;
         this.menuScoreRepository = menuScoreRepository;
         this.menuItemRelevanceRepository = menuItemRelevanceRepository;
         this.categoryRelevanceRepository = categoryRelevanceRepository;
+        this.processedOrderCounter = Counter.builder(PROCESSED_ORDER_COUNTER).register(meterRegistry);
+        this.canceledOrderCounter = Counter.builder(CANCELED_ORDER_COUNTER).register(meterRegistry);
+        this.expiredOrderCounter = Counter.builder(EXPIRED_ORDER_COUNTER).register(meterRegistry);
+        this.generatedScoresTimer = Timer.builder(GENERATED_SCORES_TIMER).register(meterRegistry);
+        this.canceledScoresTimer = Timer.builder(CANCELED_SCORES_TIMER).register(meterRegistry);
+        this.expiredScoresTimer = Timer.builder(EXPIRED_SCORES_TIMER).register(meterRegistry);
     }
 
     @Override
     public void generateScores(Order order) {
+        final long startProcessing = System.currentTimeMillis();
         final List<Item> orderItems = order.getItems();
         final BigDecimal totalItemQuantity =
                 BigDecimal.valueOf(orderItems.stream().mapToInt(Item::getQuantity).sum());
@@ -52,6 +77,8 @@ public class ScoreServiceImpl implements ScoreService {
 
         categoryScores(order, orderItems, totalItemQuantity, totalOrderPrice);
         menuScores(order, orderItems, totalItemQuantity, totalOrderPrice);
+        processedOrderCounter.count();
+        generatedScoresTimer.record(System.currentTimeMillis() - startProcessing, MILLISECONDS);
     }
 
     @Override
@@ -72,15 +99,10 @@ public class ScoreServiceImpl implements ScoreService {
 
     @Override
     public CategoryScore findCategoryScoreByType(String categoryType) throws ScoreServiceException {
-        Category category;
+        final Category category;
         try {
-            category = Category.valueOf(StringUtils.isBlank(categoryType) ? Category.OTHER.name() : categoryType.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            LOGGER.error("Invalid category type: " + categoryType, e);
-            category = Category.OTHER;
-        }
-
-        if (Category.OTHER.equals(category)) {
+            category = Category.valueOf(StringUtils.isBlank(categoryType) ? null : categoryType.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
             throw new ScoreServiceException("Invalid category type: " + categoryType
                     + ". Available categories are: " + Arrays.toString(Category.values()));
         }
@@ -126,6 +148,7 @@ public class ScoreServiceImpl implements ScoreService {
 
     @Override
     public void cancelScoresByOrderId(UUID orderId) {
+        final long startProcessing = System.currentTimeMillis();
         final List<MenuItemRelevance> itemsToCancel = menuItemRelevanceRepository.
                 findAllByOrderIdAndStatus(orderId, RelevanceStatus.ACTIVE);
         updateMenuItemsStatus(itemsToCancel, RelevanceStatus.CANCELED);
@@ -133,10 +156,13 @@ public class ScoreServiceImpl implements ScoreService {
         final List<CategoryRelevance> categoriesToCancel = categoryRelevanceRepository.
                 findAllByOrderIdAndStatus(orderId, RelevanceStatus.ACTIVE);
         updateCategoriesStatus(categoriesToCancel, RelevanceStatus.CANCELED);
+        canceledOrderCounter.count();
+        canceledScoresTimer.record(System.currentTimeMillis() - startProcessing, MILLISECONDS);
     }
 
     @Override
     public void expireScores() {
+        final long startProcessing = System.currentTimeMillis();
         final Date expireDate = DateTime.now().minusMonths(ONE_MONTH).toDate();
         final List<MenuItemRelevance> itemsToExpire = menuItemRelevanceRepository
                 .findAllByConfirmedAtBeforeAndStatus(expireDate, RelevanceStatus.ACTIVE);
@@ -145,6 +171,8 @@ public class ScoreServiceImpl implements ScoreService {
         final List<CategoryRelevance> categoriesToExpire = categoryRelevanceRepository
                 .findAllByConfirmedAtBeforeAndStatus(expireDate, RelevanceStatus.ACTIVE);
         updateCategoriesStatus(categoriesToExpire, RelevanceStatus.EXPIRED);
+        expiredOrderCounter.count();
+        expiredScoresTimer.record(System.currentTimeMillis() - startProcessing, MILLISECONDS);
     }
 
     private void updateCategoriesStatus(List<CategoryRelevance> categoriesToUpdate, RelevanceStatus status) {

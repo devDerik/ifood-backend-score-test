@@ -1,4 +1,4 @@
-package ifood.score.producer;
+package ifood.score.messagebus.producer;
 
 public interface MessageProducer<M> {
 
