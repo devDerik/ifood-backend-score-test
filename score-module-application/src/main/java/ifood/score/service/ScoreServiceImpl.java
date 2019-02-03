@@ -137,16 +137,6 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     @Override
-    public List<CategoryScore> getAllCategoryScore() {
-        return categoryScoreRepository.findAll();
-    }
-
-    @Override
-    public List<MenuItemScore> getAllMenuScore() {
-        return menuScoreRepository.findAll();
-    }
-
-    @Override
     public void cancelScoresByOrderId(UUID orderId) {
         final long startProcessing = System.currentTimeMillis();
         final List<MenuItemRelevance> itemsToCancel = menuItemRelevanceRepository.

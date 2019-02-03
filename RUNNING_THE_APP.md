@@ -9,7 +9,7 @@
 mvn clean install
 - Once the jar is built, we are able to run the docker containers using docker compose: 
 
-docker-compose up
+docker-compose up -d
 
 ### Once the Application is running we can reach the endpoints as follow:
 - Fetch Score by the given Menu Item 

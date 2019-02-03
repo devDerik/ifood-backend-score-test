@@ -44,14 +44,4 @@ public class ScoreController {
                                                  @RequestParam(value = "max", defaultValue = "100") String max) throws ScoreServiceException, ScoreServiceNoContentException {
         return scoreService.findCategoryScoreBetweenMinMax(min, max);
     }
-
-    @GetMapping("/categoryAll")
-    public List<CategoryScore> getAllCategoryScore() {
-        return scoreService.getAllCategoryScore();
-    }
-
-    @GetMapping("/menuAll")
-    public List<MenuItemScore> getAllMenuScore() {
-        return scoreService.getAllMenuScore();
-    }
 }
