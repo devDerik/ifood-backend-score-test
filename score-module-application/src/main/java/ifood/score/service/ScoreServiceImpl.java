@@ -107,7 +107,13 @@ public class ScoreServiceImpl implements ScoreService {
                     + ". Available categories are: " + Arrays.toString(Category.values()));
         }
 
-        return categoryScoreRepository.findCategoryScoreByCategory(category);
+        final CategoryScore categoryScores =
+            categoryScoreRepository.findCategoryScoreByCategory(category);
+        if (categoryScores == null) {
+            throw new ScoreServiceException("Could not find Category Score of type: " + categoryType);
+        }
+        
+        return categoryScores;
     }
 
     @Override

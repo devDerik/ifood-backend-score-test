@@ -13,7 +13,7 @@ import java.util.UUID;
 
 public class JmsCancelOrderConsumer implements MessageConsumer<UUID> {
     private static final Logger LOGGER = LoggerFactory.getLogger(JmsCancelOrderConsumer.class);
-    private static final String METRIC_COUNTER_NAME = "MESSAGE_CHECKOUT_ORDER_CONSUMED_COUNTER";
+    private static final String METRIC_COUNTER_NAME = "MESSAGE_CANCEL_ORDER_CONSUMED_COUNTER";
     private final ScoreService scoreService;
     private final Counter cancelOrderCounter;
 
